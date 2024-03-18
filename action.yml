@@ -1,0 +1,20 @@
+name: 'SFDX Login'
+description: 'Salesforce login action that uses a Salesforce DX (SFDX) authorization URL.'
+
+inputs:
+  sfdx-url:
+    description: >
+      Authorize an org using a Base64 encoded Salesforce DX (SFDX) authorization URL.
+      The SFDX authorization URL must have the format "force://<clientId>:<clientSecret>:<refreshToken>@<instanceUrl>". 
+      NOTE: The SFDX authorization URL uses the "force" protocol, and not "http" or "https". 
+      Also, the "instanceUrl" inside the SFDX authorization URL doesn't include the protocol ("https://").
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Salesforce Org Login
+      shell: bash
+      run: |
+        echo ${{ inputs.sfdx-url }} | base64 --decode | jq > authFile.json
+        sf org login sfdx-url --set-default --sfdx-url-file authFile.json
