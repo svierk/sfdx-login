@@ -1,6 +1,10 @@
 name: 'SFDX Login'
 description: 'Salesforce login action that uses a Salesforce DX (SFDX) authorization URL.'
 
+branding:
+  icon: 'log-in'
+  color: 'blue'
+
 inputs:
   sfdx-url:
     description: >
