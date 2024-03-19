@@ -38,6 +38,7 @@ jobs:
         uses: svierk/sfdx-login@main
         with:
           sfdx-url: ${{ secrets.SFDX_AUTH_URL }}
+          alias: awesome-org
 ```
 
 The SF CLI in this example workflow is installed via the action [sfdx-cli-setup](https://github.com/svierk/sfdx-cli-setup).
