@@ -1,5 +1,5 @@
 name: 'SFDX Login'
-description: 'Salesforce login action that uses a Salesforce DX (SFDX) authorization URL.'
+description: 'Salesforce login action that either uses a SFDX Auth URL or the JWT based login flow.'
 
 branding:
   icon: 'log-in'
@@ -12,7 +12,16 @@ inputs:
       The SFDX authorization URL must have the format "force://<clientId>:<clientSecret>:<refreshToken>@<instanceUrl>". 
       NOTE: The SFDX authorization URL uses the "force" protocol, and not "http" or "https". 
       Also, the "instanceUrl" inside the SFDX authorization URL doesn't include the protocol ("https://").
-    required: true
+    required: false
+  client-id:
+    description: 'OAuth client ID (also called consumer key) of the custom connected app for the JWT login flow.'
+    required: false
+  jwt-secret-key:
+    description: 'Contents of the server.key file containing the private key for the JWT login flow.'
+    required: false
+  username:
+    description: 'Username of the user logging in for the JWT login flow.'
+    required: false
   set-default-dev-hub:
     description: Set the authenticated org as the default Dev Hub.
     required: false
@@ -31,9 +40,7 @@ runs:
     - name: Salesforce Org Login
       shell: bash
       run: |
-        args=(
-          --sfdx-url-file "authFile.json"
-        )
+        args=()
 
         if [[ "${{ inputs.set-default-dev-hub }}" == "true" ]]; then
           args+=(--set-default-dev-hub)
@@ -47,5 +54,12 @@ runs:
           args+=(--alias "${{ inputs.alias }}")
         fi
 
-        echo ${{ inputs.sfdx-url }} | base64 --decode | jq > authFile.json
-        sf org login sfdx-url "${args[@]}"
+        if [[ -n "${{ inputs.sfdx-url }}" ]];then
+          echo "Log in to Salesforce org using Salesforce DX authorization URL..."
+          echo ${{ inputs.sfdx-url }} | base64 --decode | jq > authFile.json
+          sf org login sfdx-url --sfdx-url-file "authFile.json" "${args[@]}"
+        else
+          echo "Log in to Salesforce org using JSON web token (JWT)..."
+          echo "${{ inputs.jwt-secret-key }}" > server.key
+          sf org login jwt --client-id ${{ inputs.client-id }} --jwt-key-file server.key --username ${{ inputs.username }} "${args[@]}"
+        fi

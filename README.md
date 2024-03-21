@@ -1,6 +1,6 @@
 # 🔐 SFDX Login
 
-This repository implements a simple GitHub composite action that allows logging into any Salesforce org from CI/CD automations based on a Salesforce DX (SFDX) authorization URL.
+This repository implements a simple GitHub composite action that allows logging into any Salesforce org from CI/CD automations based on either a Salesforce DX (SFDX) authorization URL or using a JSON web token (JWT). Logging into an org authorizes the CLI to run other commands that connect to that org, such as deploying or retrieving a project. You can log into different types of orgs, such as sandboxes, Dev Hubs, Env Hubs, production orgs, and scratch orgs.
 
 ## Usage
 
@@ -45,7 +45,40 @@ The SF CLI in this example workflow is installed via the action [sfdx-cli-setup]
 
 ### Log in to a Salesforce org using a JSON web token (JWT)
 
-TBD
+The JWT login flow requires a custom connected app to be created as well as a digital certificate, also called a digital signature, to sign the JWT request. You can create a self-signed certificate using OpenSSL. How to achieve this is already well documented:
+
+- [Authorize an Org Using the JWT Flow](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_auth_jwt_flow.htm) | Salesforce DX Developer Guide
+- [How To Use GitHub Actions, OAuth and SFDX-CLI for Continuous Integration](https://salesforcedevops.net/index.php/2022/04/05/how-to-use-github-actions-oauth-and-sfdx-cli-for-continuous-integration/)
+
+The following three parameters must be passed to the login action:
+
+1. **client-id** | OAuth client ID (consumer key) of the custom connected app
+2. **jwt-secret-key** | Contents of the server.key file containing the private key
+3. **username** | Username of the user logging in
+
+In a GitHub workflow, the use of the action after the initial checkout step and the installation of the SF CLI could then look like this:
+
+```
+jobs:
+  validation:
+    name: Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install SF CLI
+        uses: svierk/sfdx-cli-setup@main
+        
+      - name: Salesforce Org Login
+        uses: svierk/sfdx-login@main
+        with:
+          client-id: ${{ secrets.SFDX_CONSUMER_KEY }}
+          jwt-secret-key: ${{ secrets.SFDX_JWT_SECRET_KEY }}
+          username: ${{ secrets.SFDX_USERNAME }}
+```
+
+The SF CLI in this example workflow is installed via the action [sfdx-cli-setup](https://github.com/svierk/sfdx-cli-setup).
 
 ## References
 
