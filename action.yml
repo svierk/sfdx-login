@@ -1,9 +1,9 @@
-name: 'SFDX Login'
-description: 'Salesforce login action that either uses a SFDX Auth URL or the JWT based login flow.'
+name: SFDX Login
+description: Salesforce login action that either uses a SFDX Auth URL or the JWT based login flow.
 
 branding:
-  icon: 'log-in'
-  color: 'blue'
+  icon: log-in
+  color: blue
 
 inputs:
   sfdx-url:
@@ -14,13 +14,13 @@ inputs:
       Also, the "instanceUrl" inside the SFDX authorization URL doesn't include the protocol ("https://").
     required: false
   client-id:
-    description: 'OAuth client ID (also called consumer key) of the custom connected app for the JWT login flow.'
+    description: OAuth client ID (also called consumer key) of the custom connected app for the JWT login flow.
     required: false
   jwt-secret-key:
-    description: 'Contents of the server.key file containing the private key for the JWT login flow.'
+    description: Contents of the server.key file containing the private key for the JWT login flow.
     required: false
   username:
-    description: 'Username of the user logging in for the JWT login flow.'
+    description: Username of the user logging in for the JWT login flow.
     required: false
   set-default-dev-hub:
     description: Set the authenticated org as the default Dev Hub.

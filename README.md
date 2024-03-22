@@ -48,7 +48,7 @@ The SF CLI in this example workflow is installed via the action [sfdx-cli-setup]
 The JWT login flow requires a custom connected app to be created as well as a digital certificate, also called a digital signature, to sign the JWT request. You can create a self-signed certificate using OpenSSL. How to achieve this is already well documented:
 
 - [Authorize an Org Using the JWT Flow](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_auth_jwt_flow.htm) | Salesforce DX Developer Guide
-- [How To Use GitHub Actions, OAuth and SFDX-CLI for Continuous Integration](https://salesforcedevops.net/index.php/2022/04/05/how-to-use-github-actions-oauth-and-sfdx-cli-for-continuous-integration/)
+- [How To Use GitHub Actions, OAuth and SFDX-CLI for Continuous Integration](https://salesforcedevops.net/index.php/2022/04/05/how-to-use-github-actions-oauth-and-sfdx-cli-for-continuous-integration/) | Blog Post
 
 The following three parameters must be passed to the login action:
 
