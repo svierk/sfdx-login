@@ -80,6 +80,46 @@ jobs:
 
 The SF CLI in this example workflow is installed via the action [sfdx-cli-setup](https://github.com/svierk/sfdx-cli-setup).
 
+## Inputs
+
+Provide **either** `sfdx-url` (SFDX Auth URL flow) **or** the `client-id` / `jwt-secret-key` / `username` trio (JWT flow).
+
+| Name                  | Required | Default | Description                                                                                  |
+| --------------------- | -------- | ------- | -------------------------------------------------------------------------------------------- |
+| `sfdx-url`            | no       |         | Base64 encoded SFDX authorization URL (uses the `force://` protocol) for the SFDX Auth URL flow. |
+| `client-id`           | no       |         | OAuth client ID (consumer key) of the connected app for the JWT login flow.                  |
+| `jwt-secret-key`      | no       |         | Contents of the `server.key` private key file for the JWT login flow.                        |
+| `username`            | no       |         | Username of the user logging in for the JWT login flow.                                      |
+| `set-default-dev-hub` | no       | `false` | Set the authenticated org as the default Dev Hub.                                            |
+| `set-default`         | no       | `true`  | Set the authenticated org as the default that all org-related commands run against.          |
+| `alias`               | no       |         | Alias for the org.                                                                           |
+
+## Outputs
+
+After a successful login the action exposes details of the authenticated org so that follow-up steps can reference them:
+
+| Name           | Description                            |
+| -------------- | -------------------------------------- |
+| `username`     | Username of the authenticated org.     |
+| `org-id`       | ID of the authenticated org.           |
+| `instance-url` | Instance URL of the authenticated org. |
+
+```yaml
+- name: Salesforce Org Login
+  id: login
+  uses: svierk/sfdx-login@main
+  with:
+    sfdx-url: ${{ secrets.SFDX_AUTH_URL }}
+    alias: awesome-org
+
+- name: Show authenticated org
+  run: echo "Logged in as ${{ steps.login.outputs.username }} (${{ steps.login.outputs.instance-url }})"
+```
+
+## Security
+
+Credentials are passed to the underlying CLI commands via environment variables instead of being interpolated into the shell script, which avoids leaking them into the rendered command and prevents command injection. The temporary `authFile.json` and `server.key` files created during login are removed automatically when the step finishes, even if the login fails.
+
 ## References
 
 The two authorisation options supported by this GitHub composite action can be found in the Salesforce CLI Command Reference here: 

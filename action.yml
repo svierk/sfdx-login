@@ -9,8 +9,8 @@ inputs:
   sfdx-url:
     description: >
       Authorize an org using a Base64 encoded Salesforce DX (SFDX) authorization URL.
-      The SFDX authorization URL must have the format "force://<clientId>:<clientSecret>:<refreshToken>@<instanceUrl>". 
-      NOTE: The SFDX authorization URL uses the "force" protocol, and not "http" or "https". 
+      The SFDX authorization URL must have the format "force://<clientId>:<clientSecret>:<refreshToken>@<instanceUrl>".
+      NOTE: The SFDX authorization URL uses the "force" protocol, and not "http" or "https".
       Also, the "instanceUrl" inside the SFDX authorization URL doesn't include the protocol ("https://").
     required: false
   client-id:
@@ -34,32 +34,71 @@ inputs:
     description: Alias for the org.
     required: false
 
+outputs:
+  username:
+    description: Username of the authenticated org.
+    value: ${{ steps.login.outputs.username }}
+  org-id:
+    description: ID of the authenticated org.
+    value: ${{ steps.login.outputs.org-id }}
+  instance-url:
+    description: Instance URL of the authenticated org.
+    value: ${{ steps.login.outputs.instance-url }}
+
 runs:
   using: composite
   steps:
     - name: Salesforce Org Login
+      id: login
       shell: bash
+      env:
+        SFDX_URL: ${{ inputs.sfdx-url }}
+        CLIENT_ID: ${{ inputs.client-id }}
+        JWT_SECRET_KEY: ${{ inputs.jwt-secret-key }}
+        USERNAME: ${{ inputs.username }}
+        SET_DEFAULT_DEV_HUB: ${{ inputs.set-default-dev-hub }}
+        SET_DEFAULT: ${{ inputs.set-default }}
+        ALIAS: ${{ inputs.alias }}
       run: |
+        set -euo pipefail
+
+        # Remove credential files on exit, even if the login fails.
+        trap 'rm -f authFile.json server.key' EXIT
+
         args=()
 
-        if [[ "${{ inputs.set-default-dev-hub }}" == "true" ]]; then
+        if [[ "$SET_DEFAULT_DEV_HUB" == "true" ]]; then
           args+=(--set-default-dev-hub)
         fi
 
-        if [[ "${{ inputs.set-default }}" == "true" ]]; then
+        if [[ "$SET_DEFAULT" == "true" ]]; then
           args+=(--set-default)
         fi
 
-        if [[ -n "${{ inputs.alias }}" ]]; then
-          args+=(--alias "${{ inputs.alias }}")
+        if [[ -n "$ALIAS" ]]; then
+          args+=(--alias "$ALIAS")
         fi
 
-        if [[ -n "${{ inputs.sfdx-url }}" ]];then
+        if [[ -n "$SFDX_URL" ]]; then
           echo "Log in to Salesforce org using Salesforce DX authorization URL..."
-          echo ${{ inputs.sfdx-url }} | base64 --decode | jq > authFile.json
+          echo "$SFDX_URL" | base64 --decode | jq > authFile.json
           sf org login sfdx-url --sfdx-url-file "authFile.json" "${args[@]}"
         else
           echo "Log in to Salesforce org using JSON web token (JWT)..."
-          echo "${{ inputs.jwt-secret-key }}" > server.key
-          sf org login jwt --client-id ${{ inputs.client-id }} --jwt-key-file server.key --username ${{ inputs.username }} "${args[@]}"
+          echo "$JWT_SECRET_KEY" > server.key
+          sf org login jwt --client-id "$CLIENT_ID" --jwt-key-file server.key --username "$USERNAME" "${args[@]}"
         fi
+
+        # Expose details of the authenticated org as action outputs.
+        target="${ALIAS:-${USERNAME:-}}"
+        if [[ -n "$target" ]]; then
+          org_info=$(sf org display --target-org "$target" --json)
+        else
+          org_info=$(sf org display --json)
+        fi
+
+        {
+          echo "username=$(echo "$org_info" | jq -r '.result.username')"
+          echo "org-id=$(echo "$org_info" | jq -r '.result.id')"
+          echo "instance-url=$(echo "$org_info" | jq -r '.result.instanceUrl')"
+        } >> "$GITHUB_OUTPUT"
