@@ -62,8 +62,15 @@ runs:
       run: |
         set -euo pipefail
 
-        # Remove credential files on exit, even if the login fails.
-        trap 'rm -f authFile.json server.key' EXIT
+        # Persist the JWT key outside the workspace so it survives for the whole
+        # job. The SF CLI stores the key path in the auth record and re-reads it
+        # on every JWT token refresh (e.g. "sf org create scratch"), so the file
+        # must remain available until the job ends. RUNNER_TEMP is wiped per-job.
+        KEY_FILE="${RUNNER_TEMP:-.}/server.key"
+
+        # Remove the short-lived auth URL file on exit, even if the login fails.
+        # The JWT key is intentionally NOT deleted here so later steps can re-auth.
+        trap 'rm -f authFile.json' EXIT
 
         args=()
 
@@ -85,8 +92,9 @@ runs:
           sf org login sfdx-url --sfdx-url-file "authFile.json" "${args[@]}"
         else
           echo "Log in to Salesforce org using JSON web token (JWT)..."
-          echo "$JWT_SECRET_KEY" > server.key
-          sf org login jwt --client-id "$CLIENT_ID" --jwt-key-file server.key --username "$USERNAME" "${args[@]}"
+          echo "$JWT_SECRET_KEY" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          sf org login jwt --client-id "$CLIENT_ID" --jwt-key-file "$KEY_FILE" --username "$USERNAME" "${args[@]}"
         fi
 
         # Expose details of the authenticated org as action outputs.

@@ -118,7 +118,10 @@ After a successful login the action exposes details of the authenticated org so 
 
 ## Security
 
-Credentials are passed to the underlying CLI commands via environment variables instead of being interpolated into the shell script, which avoids leaking them into the rendered command and prevents command injection. The temporary `authFile.json` and `server.key` files created during login are removed automatically when the step finishes, even if the login fails.
+Credentials are passed to the underlying CLI commands via environment variables instead of being interpolated into the shell script, which avoids leaking them into the rendered command and prevents command injection.
+
+The temporary `authFile.json` file created during the SFDX Auth URL flow is removed automatically when the step finishes, even if the login fails. For the JWT flow, the private key is written to a `server.key` file in the runner's temporary directory (`$RUNNER_TEMP`) with `600` permissions and is intentionally kept for the duration of the job. This is required because the Salesforce CLI stores the key's path in the auth record and re-reads it on every JWT token refresh — for example when a later step runs `sf org create scratch`, deploys metadata, or deletes the org. Removing the key right after login would cause those steps to fail with `ENOENT: no such file or directory ... server.key`. The key never persists beyond the job: GitHub-hosted runners are destroyed afterward, and `$RUNNER_TEMP` is cleared between jobs on self-hosted runners.
+
 
 ## References
 
